@@ -1605,10 +1605,10 @@ int generateNavMsg(gpstime_t g, channel_t *chan, int init)
 }
 
 void printVect3(double* vect) {
-	//printf("")
+	printf("%f, %f, %f, length = %f\n", vect[0], vect[1], vect[2], sqrt(vect[0] * vect[0] + vect[1] * vect[1] + vect[2] * vect[2]));
 }
 
-int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double elvMask, double *azel)
+int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double *azel)
 {
 	double llh[3],neu[3];
 	double pos[3],vel[3],clk[3],los[3];
@@ -1626,8 +1626,24 @@ int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double elvMask, do
 	neu2azel(azel, neu);
 
 	//printf("xyz: %f, %f, %f\n", xyz[0], xyz[1], xyz[2]);
-	printf("dist: %f km\n", sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) / 1000);
+	//printf("dist: %f km\n", sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) / 1000);
+	//printVect3(pos);
 
+	double receiver_altitude = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+
+	double elvMask = 90. - asin((double)EARTH_RADIUS_M / receiver_altitude) * R2D;
+	
+	// testing: delete the original satellites from the top 
+	// testing start 
+
+	if (azel[1] * R2D > 0.0) return 0; // remove original sats
+
+	// original code 
+	if (azel[1] * R2D > 0.0)
+		return 1; 
+	return 0;
+
+	// testing end 
 	if (azel[1]*R2D > elvMask)
 		return (1); // Visible
 	// else
@@ -1647,7 +1663,7 @@ int allocateChannel(channel_t *chan, ephem_t *eph, ionoutc_t ionoutc, gpstime_t 
 
 	for (sv=0; sv<MAX_SAT; sv++)
 	{
-		if(checkSatVisibility(eph[sv], grx, xyz, 0.0, azel)==1)
+		if(checkSatVisibility(eph[sv], grx, xyz, azel)==1)
 		{
 			nsat++; // Number of visible satellites
 
