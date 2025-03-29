@@ -12,6 +12,9 @@
 #endif
 #include "gpssim.h"
 
+
+#define EARTH_RADIUS_M 6355000 // slight underestimate
+
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
 	  50,  53,  56,  59,  62,  65,  68,  71,  74,  77,  80,  83,  86,  89,  91,  94,
@@ -1601,6 +1604,10 @@ int generateNavMsg(gpstime_t g, channel_t *chan, int init)
 	return(1);
 }
 
+void printVect3(double* vect) {
+	//printf("")
+}
+
 int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double elvMask, double *azel)
 {
 	double llh[3],neu[3];
@@ -1617,6 +1624,9 @@ int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double elvMask, do
 	subVect(los, pos, xyz);
 	ecef2neu(los, tmat, neu);
 	neu2azel(azel, neu);
+
+	//printf("xyz: %f, %f, %f\n", xyz[0], xyz[1], xyz[2]);
+	printf("dist: %f km\n", sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) / 1000);
 
 	if (azel[1]*R2D > elvMask)
 		return (1); // Visible
