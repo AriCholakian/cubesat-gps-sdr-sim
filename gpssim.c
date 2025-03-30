@@ -14,6 +14,8 @@
 
 
 #define EARTH_RADIUS_M 6355000 // slight underestimate
+// #define EARTH_RADIUS_M (6355000 - 800000)
+
 
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
@@ -1625,28 +1627,26 @@ int checkSatVisibility(ephem_t eph, gpstime_t g, double *xyz, double *azel)
 	ecef2neu(los, tmat, neu);
 	neu2azel(azel, neu);
 
-	//printf("xyz: %f, %f, %f\n", xyz[0], xyz[1], xyz[2]);
-	//printf("dist: %f km\n", sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) / 1000);
-	//printVect3(pos);
-
 	double receiver_altitude = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
 
+	if (receiver_altitude < EARTH_RADIUS_M) {
+		printf("The receiver is underground (alt = %fm). No satellites visible from this position.\n", receiver_altitude);
+		return 0;
+	}
+
 	double elvMask = 90. - asin((double)EARTH_RADIUS_M / receiver_altitude) * R2D;
-	
-	// testing: delete the original satellites from the top 
-	// testing start 
 
-	if (azel[1] * R2D > 0.0) return 0; // remove original sats
+	// testing: delete the original satellites from the top
 
-	// original code 
-	if (azel[1] * R2D > 0.0)
-		return 1; 
-	return 0;
+	//if (azel[1] * R2D > 0.0) return 0; // remove original sats
+	//return 1;
 
-	// testing end 
-	if (azel[1]*R2D > elvMask)
+	if (-1 * azel[1] * R2D < elvMask) {
+		printf("visible\n");
 		return (1); // Visible
-	// else
+	}
+	printf("not visible\n");
+
 	return (0); // Invisible
 }
 
@@ -1748,7 +1748,8 @@ void usage(void)
 		"  -b <iq_bits>     I/Q data format [1/8/16] (default: 16)\n"
 		"  -i               Disable ionospheric delay for spacecraft scenario\n"
 		"  -p [fixed_gain]  Disable path loss and hold power level constant\n"
-		"  -v               Show details about simulated channels\n",
+		"  -v               Show details about simulated channels\n"
+		"  -k               Make antenna isotropic\n",
 		((double)USER_MOTION_SIZE) / 10.0, STATIC_MAX_DURATION);
 
 	return;
@@ -1842,7 +1843,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while ((result=getopt(argc,argv,"e:u:x:g:c:l:o:s:b:L:T:t:d:ipv"))!=-1)
+	while ((result=getopt(argc,argv,"e:u:x:g:c:l:o:s:b:L:T:t:d:ipvk"))!=-1)
 	{
 		switch (result)
 		{
@@ -1970,6 +1971,13 @@ int main(int argc, char *argv[])
 		case 'v':
 			verb = TRUE;
 			break;
+		case 'k':
+			// isotropic antenna mode 
+			for (int index = 0; index < 37; index++) {
+				ant_pat_db[index] = 0; 
+			}
+			printf("ASDASDASDASDASDASD\n");
+			break; 
 		case ':':
 		case '?':
 			usage();
